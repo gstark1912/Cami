@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Book of Us</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Libre Baskerville', serif;
+      background: linear-gradient(135deg, #8B4513 0%, #D2B48C 50%, #F5DEB3 100%);
+      min-height: 100vh;
+      padding: 10px;
+      height: auto
+    }
+
+    .recipe-book {
+      max-width: 100%;
+      margin: 0 auto;
+      perspective: 1000px;
+      position: relative;
+    }
+
+    .book-container {
+      position: relative;
+      width: 100%;
+      height: 85vh;
+      max-height: none;
+      min-height: 500px;
+      transform-style: preserve-3d;
+    }
+
+    .page {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 108, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, #FAF0E6 0%, #F5F5DC 25%, #FFF8DC 50%, #F0E68C 100%);
+      border: 2px solid #8B4513;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow:
+        inset 0 0 15px rgba(0, 0, 0, 0.1),
+        0 8px 25px rgba(0, 0, 0, 0.3);
+      transform-origin: left center;
+      transition: transform 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+      backface-visibility: hidden;
+      overflow-y: auto;
+    }
+
+    .page.flipped {
+      transform: rotateY(-180deg);
+    }
+
+    .page.current-page {
+      z-index: 20;
+    }
+
+    .page-content {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Introduction Page Styles */
+    .intro-page {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .intro-title {
+      font-size: 2.5rem;
+      color: #8B4513;
+      margin-bottom: 15px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .intro-subtitle {
+      font-size: 1.2rem;
+      color: #A0522D;
+      font-style: italic;
+      margin-bottom: 30px;
+    }
+
+    .intro-description {
+      font-size: 1rem;
+      color: #654321;
+      line-height: 1.6;
+      max-width: 300px;
+      margin-bottom: 30px;
+    }
+
+    .intro-decoration {
+      font-size: 2rem;
+      color: #8B4513;
+      margin: 20px 0;
+    }
+
+    /* Recipe Page Styles */
+    .recipe-header {
+      text-align: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #8B4513;
+      padding-bottom: 15px;
+    }
+
+    .recipe-title {
+      font-size: 1.8rem;
+      color: #8B4513;
+      margin-bottom: 8px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      font-weight: 700;
+    }
+
+    .recipe-subtitle {
+      font-size: 0.9rem;
+      color: #A0522D;
+      font-style: italic;
+    }
+
+    .recipe-image {
+      width: 100%;
+      height: 50vh;
+      max-height: 400px;
+      min-height: 200px;
+      aspect-ratio: 4/3;
+      background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      border: 2px dashed #8B4513;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #8B4513;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9rem;
+      object-fit: cover;
+    }
+
+    .recipe-section {
+      margin-bottom: 20px;
+      flex: 1;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      color: #8B4513;
+      margin-bottom: 12px;
+      border-left: 3px solid #8B4513;
+      padding-left: 12px;
+      font-weight: 700;
+    }
+
+    .ingredients-list {
+      list-style: none;
+      padding-left: 15px;
+    }
+
+    .ingredients-list li {
+      margin-bottom: 6px;
+      position: relative;
+      color: #654321;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .ingredients-list li:before {
+      content: "✦";
+      position: absolute;
+      left: -15px;
+      color: #8B4513;
+    }
+
+    .preparation-steps {
+      color: #654321;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .preparation-steps p {
+      margin-bottom: 8px;
+    }
+
+    .navigation {
+      position: fixed;
+      bottom: 20px;
+      z-index: 100;
+    }
+
+    .nav-button {
+      background: rgba(139, 69, 19, 0.9);
+      border: none;
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      touch-action: manipulation;
+    }
+
+    .nav-button:hover:not(:disabled) {
+      background: rgba(139, 69, 19, 1);
+      transform: scale(1.05);
+    }
+
+    .nav-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: scale(1);
+    }
+
+    .nav-left {
+      left: 20px;
+    }
+
+    .nav-right {
+      right: 20px;
+    }
+
+    .page-indicator {
+      text-align: center;
+      margin-top: 15px;
+      color: #8B4513;
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    .recipe-image video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      /* o 'contain' si no querés recorte */
+      display: block;
+    }
+
+
+    .book-spine {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, #8B4513, #A0522D);
+      border-radius: 2px 0 0 2px;
+      box-shadow: inset -1px 0 3px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Tablet styles */
+    @media (min-width: 768px) {
+      body {
+        padding: 15px;
+      }
+
+      .book-container {
+        height: 95vh;
+      }
+
+      .page {
+        padding: 30px;
+      }
+
+      .recipe-title {
+        font-size: 2rem;
+      }
+
+      .intro-title {
+        font-size: 3rem;
+      }
+
+      .recipe-image {
+        height: 45vh;
+        max-height: 450px;
+      }
+
+      .navigation {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        bottom: auto;
+      }
+
+      .nav-left {
+        left: -70px;
+      }
+
+      .nav-right {
+        right: -70px;
+      }
+
+      .nav-button {
+        width: 55px;
+        height: 55px;
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Desktop styles */
+    @media (min-width: 1024px) {
+      .recipe-book {
+        max-width: 800px;
+      }
+
+      .book-container {
+        height: 95vh;
+      }
+
+      .page {
+        padding: 40px;
+      }
+
+      .recipe-image {
+        height: 50vh;
+        max-height: 500px;
+      }
+
+      .nav-left {
+        left: -80px;
+      }
+
+      .nav-right {
+        right: -80px;
+      }
+
+      .nav-button {
+        width: 60px;
+        height: 60px;
+        font-size: 1.6rem;
+      }
+    }
+
+    /* Extra small phones */
+    @media (max-width: 320px) {
+      .intro-title {
+        font-size: 2rem;
+      }
+
+      .recipe-title {
+        font-size: 1.5rem;
+      }
+
+      .page {
+        padding: 15px;
+      }
+
+      .recipe-image {
+        height: 45vh;
+        min-height: 180px;
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="recipe-book">
+      <div class="book-container">
+        <div class="book-spine"></div>
+
+        <!-- Introduction Page -->
+        <div :class="getPageClasses(-1)" class="page">
+          <div class="page-content intro-page">
+            <h1 class="intro-title">Camila</h1>
+            <p class="intro-subtitle">La receta</p>
+            <div class="intro-decoration">🌼</div>
+            <p class="intro-description">
+              De la fascinación que me genera quien sos, nace este recetario que
+              intenta identificar los pasos que me trajeron a estar con la cosa más linda, divertida y hot que vi jamás.
+            </p>
+            <div class="intro-decoration">🫀</div>
+            <p class="intro-description" style="font-style: italic; color: #A0522D;">
+              “Esto es amor; quien lo probó lo sabe.” </br> </br> Lope de Vega
+            </p>
+          </div>
+        </div>
+
+        <!-- Recipe Pages -->
+        <div v-for="(recipe, index) in recipes" :key="index" :class="getPageClasses(index)" class="page">
+          <div class="page-content">
+            <div class="recipe-header">
+              <h1 class="recipe-title">{{ recipe.title }}</h1>
+              <p class="recipe-subtitle">{{ recipe.subtitle }}</p>
+            </div>
+
+            <div class="recipe-image" v-if="recipe.imagePlaceholder">
+              <img style="width: 100%; height: auto;display: block;" :src=" recipe.imagePlaceholder" alt=""
+                class="recipe-photo" loading="lazy">
+            </div>
+
+            <div class="recipe-image" v-if="recipe.videoPlaceholder">
+              <video class="auto-video" :src="recipe.videoPlaceholder" muted loop playsinline autoplay
+                preload="metadata">
+              </video>
+            </div>
+
+            <div class="recipe-section" v-if="recipe.ingredients && recipe.ingredients.length">
+              <h2 class="section-title">{{recipe.iTitle ?? "Ingredientes"}}</h2>
+              <ul class="ingredients-list">
+                <div class="preparation-steps" v-if="recipe.iTitle">
+                  <p v-for="ingredient in recipe.ingredients" :key="ingredient">{{ ingredient }}</p>
+                </div>
+                <li v-else v-for="ingredient in recipe.ingredients" :key="ingredient">
+                  {{ ingredient }}
+                </li>
+              </ul>
+            </div>
+
+            <div class="recipe-section" v-if="recipe.steps && recipe.steps.length">
+              <h2 class="section-title">{{recipe.sTitle ?? "Preparación"}}</h2>
+              <div class="preparation-steps">
+                <p v-for="step in recipe.steps" :key="step">{{ step }}</p>
+              </div>
+            </div>
+
+            <a v-if="recipe.link" :href="recipe.link" class="cta-link">Click acá</a>
+
+          </div>
+        </div>
+        <div class="navigation nav-left">
+          <button class="nav-button" @click="previousPage" :disabled="currentPage === -1">
+            ‹
+          </button>
+        </div>
+
+        <div class="navigation nav-right">
+          <button class="nav-button" @click="nextPage" :disabled="currentPage === recipes.length - 1">
+            ›
+          </button>
+        </div>
+      </div>
+
+      <div class="page-indicator">
+        <span v-if="currentPage === -1"></span>
+        <span v-else>{{ currentPage + 1 }} de {{ recipes.length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, onBeforeUnmount } = Vue;
+
+    createApp({
+      setup() {
+        const observer = null;
+        const currentPage = ref(-1); // Start with introduction page
+
+        const recipes = ref([
+          {
+            title: "Paso 1",
+            subtitle: "Preparación previa",
+            imagePlaceholder: "pampano.jpg",
+            ingredients: [
+              "1 Gimnasio",
+              "Atracción: fundamental",
+              "Chistes cada tanto, evitar ser demasiado varón",
+              "1 lugar de cita con vinos naranjos. Evitar Palermo.",
+            ],
+            steps: [
+              "Saludar nerviosamente con una sonrisa llamandolá por el nombre. Es normal estar contento por volver a verla después de un tiempo sin coincidir.",
+              "Es normal no poder sacarle los ojos de encima. Disfrutar el momento. Retarse a uno mismo si lo encuentran al menos dos veces mirando. No queremos ser un acosador.",
+              "Forzar conversaciones innecesarias, pedir permiso para cosas obvias con tal de hablar un poco."
+            ]
+          },
+          {
+            title: "Paso 2",
+            ingredients: [
+              "1 Luquita Pasut"
+            ],
+            steps: [
+              "A lo tuyo Luquitas"
+            ],
+            imagePlaceholder: "pasut.jpg",
+          },
+          {
+            title: "Paso 3",
+            subtitle: "Noviazgo exprés de 20 días",
+            imagePlaceholder: "miranda.jpg",
+            ingredients: [
+              "🚲 Bicicleta para amor adolescente",
+              "🚗⛈️🍷 No se suspende por lluvia",
+              "🔥👄 Calor del bueno",
+              "🎂 Torta para cumpleaños si justo cae"
+            ],
+            steps: [
+              "Bien temprano en la receta introducimos picante. ¿Cuanto? Todo el que se pueda.",
+              "El objetivo es que rápidamente se vea PIEL.",
+              "Fuego, intensidad, casi obsesión.",
+              "A Camila la caracteriza la PASIÓN, asi que peor que ser intenso es ser tibio."
+            ]
+          },
+          {
+            title: "Paso 4",
+            subtitle: "Maceración",
+            imagePlaceholder: "europa1.jpg",
+            steps: [
+              "Una vez consumido el noviazgo exprés, a la heladera.",
+              "Dejar maserando durante 2 meses. Irse lejos, a un océano de lejos.",
+              "Con algo de espacio, oxígeno, y alguna que otra pelicula vista a distancia se mantiene el calor inicial hasta terminar el proceso.",
+              "En este paso es normal algo de ansiedad, tensión en el cuerpo y ganas de volver a verse. No volver nadando antes de tiempo.",
+              "Confiar, vencer el miedo a que se vaya a enfriar demasiado"
+            ]
+          },
+          {
+            title: "Paso 5",
+            subtitle: "Degustación intermedia",
+            imagePlaceholder: "collage_prenovios.jpg",
+            ingredients: [
+              "📽️👨‍🦰 Nicolas Cage",
+              "📽️🐻‍❄️ Cocaine Bear",
+              "🍔 Kiddo",
+              "📽️👽 Alien",
+              "Velas",
+              "Sillón cómodo"
+            ],
+            steps: [
+              "Se incorpora el daño al vínculo. Ya no hay vuelta atrás.",
+              "Mucho café, mucho jijearse, mucho cine..",
+              "Sorprender cocinandolé una cena. Oler a carbón de ser posible.",
+              "Fuego lento 3 meses aproximadamente. Si todo va bien, a ella se le va a caer una declaración espontánea.",
+              "Es posible que te impacte tanto que no sepas bien que decir. No te preocupes, es normal."
+            ]
+          },
+          {
+            title: "Paso 6",
+            subtitle: "Presentación",
+            imagePlaceholder: "novios.jpg",
+            steps: [
+              "Si todo sale bien, y para finalizar la cocción, ponerse de novio.",
+              "⚠️ Buscar la mayor sobriedad posible a la hora de hacerlo."
+            ]
+          },
+          {
+            title: "Paso 7",
+            subtitle: "Degustación",
+            imagePlaceholder: "auto_mardel.jpg",
+            steps: [
+              "Para esta altura se harán presente todos los condimentos espectaculares de la experiencia Camila.",
+              "Es posible que aparezcan muchas experiencias culinarias nuevas.",
+              "Es muy posible que quede atado a ella la sensación de que es fácil ser feliz solo estando juntos.",
+              "Ir a Mar del Plata. Seguirla en cada plan que se le ocurra.",
+              "Si del pecho te sale urgente una necesidad de decirle que la amás, estás bien."
+            ]
+          },
+          {
+            title: "Notas del Chef",
+            subtitle: "Guarnición y maridaje",
+            imagePlaceholder: "maridaje.jpg",
+            iTitle: "Bebida",
+            sTitle: "Maridaje",
+            ingredients: [
+              "La opción de bebidas es completamente diversa. Camila se comparte perfecto con Vino tinto, Vino blanco, Cynar, Ramazotti, Cerveza, Gin entre otros.."
+            ],
+            steps: [
+              "Presentar en tus círculos cercanos o adoptar a los de ella demuestra lo único de este plato.",
+              "La sensación es de una curiosidad interminable de verla interactuar con todos, urgen ganas de que todo el mundo la conozca y sepa lo increíble que es"
+            ]
+          },
+          {
+            title: "Mercados",
+            subtitle: "Interno y de exportación",
+            imagePlaceholder: "colombia.jpg",
+            ingredients: [
+              "Mar del Plata. Dejala que te lleve a comer a donde le parezca, no sabe elegir mal.",
+              "Colombia. ⚠️ No exponer a demasiado ceviche en pocos días, no dejar reposar tanto tiempo en un aeropuerto."
+            ],
+            sTitle: "Futuros Mercados",
+            steps: [
+              "Trevelin, Bariloche, El Bolsón, Mendoza, Salta, Jujuy, Brasil.. ¿A donde no iría con vos?",
+              "Europa, para estar juntos apretados en el agua de menorca todo el día"
+            ]
+          },
+          {
+            title: "Ediciones Limitadas",
+            subtitle: "Camila Croacia",
+            imagePlaceholder: "croacia.jpg"
+          },
+          {
+            title: "Ediciones Limitadas",
+            subtitle: "Camila Cumpleañito",
+            imagePlaceholder: "cumpleañito.jpg"
+          },
+          {
+            title: "Ediciones Limitadas",
+            subtitle: "Camila Hada del bosque",
+            imagePlaceholder: "hada.jpg"
+          },
+          {
+            title: "Ediciones Limitadas",
+            subtitle: "Camila Cita Nocturna (mirá lo linnnnda que es)",
+            imagePlaceholder: "cita.jpg"
+          },
+          {
+            title: "Ediciones Limitadas",
+            subtitle: "Camila Dominadas",
+            videoPlaceholder: "dominadas.mp4"
+          },
+          {
+            title: "El mejor maridaje",
+            subtitle: "Yo, je",
+            imagePlaceholder: "juntos.jpg"
+          },
+          {
+            title: "El mejor maridaje",
+            subtitle: "Pero mirá que cancheros con lo linnnnnndo que me queda ese jean",
+            imagePlaceholder: "cancheros.jpg"
+          },
+          {
+            title: "El mejor maridaje",
+            subtitle: "Siempre jijeando",
+            imagePlaceholder: "risas.jpg"
+          },
+          {
+            title: "Te amo linda",
+            subtitle: "Sos la mejor compañera que existe",
+            imagePlaceholder: "mardel_playa.jpg"
+          },
+          {
+            title: "Y ahora sí",
+            link: 'https://www.instagram.com/cami.pasut/',
+          }
+        ]);
+
+        const nextPage = () => {
+          if (currentPage.value < recipes.value.length - 1) {
+            currentPage.value++;
+          }
+        };
+
+        const previousPage = () => {
+          if (currentPage.value > -1) {
+            currentPage.value--;
+          }
+        };
+
+        const getPageClasses = (index) => {
+          if (index === currentPage.value) {
+            return 'current-page';
+          } else if (index < currentPage.value) {
+            return 'flipped';
+          }
+          return '';
+        };
+
+        const START_AT = 15.0; // segundo desde el que querés iniciar
+        function seekToStart(v) {
+          if (v.readyState >= 1) safeSeek(v);
+          else v.addEventListener('loadedmetadata', () => safeSeek(v), { once: true });
+        }
+
+        function safeSeek(v) {
+          try {
+            // Evita pedir un tiempo fuera del rango seekable (móviles/HLS)
+            const end = (v.seekable && v.seekable.length) ? v.seekable.end(0) : Infinity;
+            v.currentTime = Math.min(START_AT, end - 0.05);
+          } catch (e) { /* no-op */ }
+        }
+
+
+        // Keyboard and touch navigation
+        onMounted(() => {
+          window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'ArrowLeft') previousPage();
+          });
+
+          // Touch/swipe support for mobile
+          let startX = 0;
+          let startY = 0;
+
+          document.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+          });
+
+          document.addEventListener('touchend', (e) => {
+            if (!startX || !startY) return;
+
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+
+            const diffX = startX - endX;
+            const diffY = startY - endY;
+
+            // Only trigger if horizontal swipe is greater than vertical
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+              if (diffX > 0) {
+                nextPage(); // Swipe left = next page
+              } else {
+                previousPage(); // Swipe right = previous page
+              }
+            }
+
+            startX = 0;
+            startY = 0;
+          });
+
+          const videos = document.querySelectorAll('.auto-video');
+
+          observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              const v = entry.target;
+              if (entry.isIntersecting) {
+                const p = v.play();
+                if (p) p.catch(() => { }); // evita error de autoplay bloqueado
+              } else {
+                v.pause();
+                v.currentTime = 0;
+              }
+            });
+          }, { threshold: 0.5 });
+
+          videos.forEach(v => observer.observe(v));
+
+          vids = Array.from(document.querySelectorAll('.auto-video'));
+
+          io = new IntersectionObserver((entries) => {
+            entries.forEach(({ isIntersecting, target: v }) => {
+              if (isIntersecting) {
+                seekToStart(v);
+                const p = v.play(); if (p) p.catch(() => { });
+              } else {
+                v.pause();
+                v.currentTime = START_AT;
+              }
+            });
+          }, { threshold: 0.5 });
+
+          vids.forEach(v => {
+            seekToStart(v);
+            v.addEventListener('ended', () => {
+              v.currentTime = START_AT;
+              v.play();
+            });
+            io.observe(v);
+          });
+        });
+
+        onBeforeUnmount(() => { if (observer) observer.disconnect(); });
+
+        return {
+          currentPage,
+          recipes,
+          nextPage,
+          previousPage,
+          getPageClasses
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+
+</html>
