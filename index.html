@@ -307,10 +307,69 @@
       }
 
       .navigation {
+        background: transparent;
+        backdrop-filter: blur(4px) saturate(110%);
+        -webkit-backdrop-filter: blur(4px) saturate(110%);
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
         bottom: auto;
+      }
+
+      /* Botones izquierda/derecha */
+      .nav-btn,
+      .nav-left,
+      .nav-right {
+        background: rgba(0, 0, 0, .06);
+        /* casi transparente */
+        color: rgba(255, 255, 255, .85);
+        /* ícono/chevron legible */
+        border: 1px solid rgba(255, 255, 255, .25);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, .12);
+        opacity: .55;
+        /* más transparencia aún */
+        transition: opacity .2s ease, transform .2s ease, background-color .2s ease;
+      }
+
+      /* Hover/Focus para usabilidad */
+      .nav-btn:hover,
+      .nav-left:hover,
+      .nav-right:hover,
+      .nav-btn:focus-visible,
+      .nav-left:focus-visible,
+      .nav-right:focus-visible {
+        opacity: .95;
+        background: rgba(0, 0, 0, .18);
+        outline: 2px solid rgba(255, 255, 255, .35);
+        outline-offset: 2px;
+      }
+
+      /* Active */
+      .nav-btn:active,
+      .nav-left:active,
+      .nav-right:active {
+        transform: scale(.98);
+      }
+
+      /* Si tenés un “bar” inferior */
+      .navbar-translucent {
+        background: rgba(255, 255, 255, .04);
+        border-top: 1px solid rgba(255, 255, 255, .18);
+        backdrop-filter: blur(6px);
+      }
+
+      /* Accesibilidad: permitir desactivar transparencia del usuario */
+      @media (prefers-reduced-transparency: reduce) {
+
+        .navigation,
+        .navbar-translucent,
+        .nav-btn,
+        .nav-left,
+        .nav-right {
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+          opacity: .9;
+        }
       }
 
       .nav-left {
@@ -405,6 +464,8 @@
             <p class="intro-description" style="font-style: italic; color: #A0522D;">
               “Esto es amor; quien lo probó lo sabe.” </br> </br> Lope de Vega
             </p>
+            <a href="https://open.spotify.com/intl-es/track/02JIdsrod3BYucThfUFDUX?si=026c5ce432c04699">Click acá antes
+              de seguir</a>
           </div>
         </div>
 
@@ -462,7 +523,6 @@
           </button>
         </div>
       </div>
-
       <div class="page-indicator">
         <span v-if="currentPage === -1"></span>
         <span v-else>{{ currentPage + 1 }} de {{ recipes.length }}</span>
@@ -475,7 +535,7 @@
 
     createApp({
       setup() {
-        const observer = null;
+        let observer = null;
         const currentPage = ref(-1); // Start with introduction page
 
         const recipes = ref([
@@ -689,9 +749,22 @@
           } catch (e) { /* no-op */ }
         }
 
+        const bgm = ref(null);
+        const enableAudio = () => {
+          const a = bgm.value
+          if (!a) return
+          a.muted = false
+          a.volume = 0.15
+          a.play().catch(() => { })
+          window.removeEventListener('click', enableAudio)
+          window.removeEventListener('touchstart', enableAudio)
+        }
 
         // Keyboard and touch navigation
         onMounted(() => {
+          window.addEventListener('click', enableAudio)
+          window.addEventListener('touchstart', enableAudio)
+
           window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') nextPage();
             if (e.key === 'ArrowLeft') previousPage();
@@ -769,7 +842,11 @@
           });
         });
 
-        onBeforeUnmount(() => { if (observer) observer.disconnect(); });
+        onBeforeUnmount(() => {
+          if (observer) observer.disconnect();
+          window.removeEventListener('click', enableAudio);
+          window.removeEventListener('touchstart', enableAudio);
+        });
 
         return {
           currentPage,
