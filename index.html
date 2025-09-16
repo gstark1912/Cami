@@ -61,10 +61,17 @@
 
     .page.flipped {
       transform: rotateY(-180deg);
+      z-index: 1;
     }
 
     .page.current-page {
       z-index: 20;
+    }
+
+    /* Ocultá toda page que NO sea la actual ni esté dada vuelta */
+    .page:not(.current-page):not(.flipped) {
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .page-content {
@@ -279,6 +286,7 @@
 
       .book-container {
         height: 95vh;
+        min-height: 0;
       }
 
       .page {
