@@ -324,7 +324,7 @@
         /* casi transparente */
         color: rgba(255, 255, 255, .85);
         /* ícono/chevron legible */
-        border: 1px solid rgba(255, 255, 255, .25);
+        border: 1px solid rgba(255, 255, 255, 0.171);
         box-shadow: 0 6px 24px rgba(0, 0, 0, .12);
         opacity: .55;
         /* más transparencia aún */
@@ -384,6 +384,26 @@
         width: 55px;
         height: 55px;
         font-size: 1.5rem;
+      }
+
+      .tw {
+        display: inline-block;
+        white-space: pre-wrap;
+        /* respeta saltos y espacios */
+        border-right: .08em solid currentColor;
+        /* cursor */
+        padding-right: .08em;
+      }
+
+      .tw.done {
+        border-right-color: transparent;
+      }
+
+      /* Accesibilidad: si el usuario prefiere menos animaciones, mostrar texto completo */
+      @media (prefers-reduced-motion: reduce) {
+        .tw {
+          border-right-color: transparent;
+        }
       }
     }
 
@@ -507,8 +527,12 @@
               </div>
             </div>
 
-            <a v-if="recipe.link" :href="recipe.link" class="cta-link">Click acá</a>
-
+            <a v-if="recipe.link" :href="recipe.link" class="cta-link">{{recipe.linkText}}</a>
+            <p v-if="recipe.letter">
+              <span class="tw" data-speed="35">
+                {{ recipe.letter }}
+              </span>
+            </p>
           </div>
         </div>
         <div class="navigation nav-left">
@@ -531,7 +555,7 @@
   </div>
 
   <script>
-    const { createApp, ref, computed, onMounted, onBeforeUnmount } = Vue;
+    const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick } = Vue;
 
     createApp({
       setup() {
@@ -710,7 +734,13 @@
           },
           {
             title: "Y ahora sí",
-            link: 'https://www.instagram.com/cami.pasut/',
+            linkText: "Click acá antes de seguir",
+            link: 'https://open.spotify.com/intl-es/track/0cHVi2rirbT62DlX3uabke?si=3a5a23e19c07445d',
+          },
+          {
+            title: 'Y ahora sí',
+            linkText: "Y acá unas palabras un poco más serias:",
+            link: 'letter.html',
           }
         ]);
 
@@ -749,21 +779,74 @@
           } catch (e) { /* no-op */ }
         }
 
-        const bgm = ref(null);
-        const enableAudio = () => {
-          const a = bgm.value
-          if (!a) return
-          a.muted = false
-          a.volume = 0.15
-          a.play().catch(() => { })
-          window.removeEventListener('click', enableAudio)
-          window.removeEventListener('touchstart', enableAudio)
+        const prefersReduce = () =>
+          window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+
+        let obs
+
+        const prepare = (el) => {
+          el.dataset.full = el.textContent
+          el.textContent = ''
+        }
+
+        const fullyVisible = (el, root = null, margin = 0) => {
+          const er = el.getBoundingClientRect()
+          if (!root) {
+            const vh = window.innerHeight
+            return er.top >= margin && er.bottom <= (vh - margin)
+          }
+          const rr = root.getBoundingClientRect()
+          const top = er.top - rr.top
+          const bottom = er.bottom - rr.top
+          const vh = root.clientHeight
+          return top >= margin && bottom <= (vh - margin)
+        }
+
+        const typeWriter = (el) => {
+          const text = el.dataset.full ?? ''
+          const speed = +el.dataset.speed || 25
+          let i = 0
+            ; (function tick() {
+              el.textContent = text.slice(0, i++)
+              if (i <= text.length) setTimeout(tick, speed)
+              else el.classList.add('done')
+            })()
+        }
+
+        const init = () => {
+          const els = [...document.querySelectorAll('.tw')]
+          if (!els.length) return
+
+          els.forEach(prepare)
+
+          // IMPORTANTe: cambiá el selector por el contenedor que realmente scrollea
+          const root = document.querySelector('.page') || null
+
+          obs?.disconnect()
+          obs = new IntersectionObserver((entries) => {
+            entries.forEach(({ isIntersecting, target }) => {
+              if (!isIntersecting || target.dataset.started) return
+              // NO arranques hasta que esté plenamente visible dentro del root
+              if (!fullyVisible(target, root, 0)) return
+              target.dataset.started = '1'
+              console.log('[TW] START →', target.textContent)
+              typeWriter(target)
+              obs.unobserve(target)
+            })
+          }, {
+            root,               // viewport si es null
+            threshold: [0, 0.5, 1],
+            rootMargin: '0px'   // si hay header fijo: '-80px 0px 0px 0px'
+          })
+
+          els.forEach(el => obs.observe(el))
         }
 
         // Keyboard and touch navigation
-        onMounted(() => {
-          window.addEventListener('click', enableAudio)
-          window.addEventListener('touchstart', enableAudio)
+        onMounted(async () => {
+          await nextTick()
+          // esperar a que se acomoden imágenes/ fuentes para evitar falsos positivos
+          requestAnimationFrame(() => requestAnimationFrame(init));
 
           window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') nextPage();
@@ -844,8 +927,7 @@
 
         onBeforeUnmount(() => {
           if (observer) observer.disconnect();
-          window.removeEventListener('click', enableAudio);
-          window.removeEventListener('touchstart', enableAudio);
+          obs?.disconnect();
         });
 
         return {

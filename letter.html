@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Book of Us</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Libre Baskerville', serif;
+      background: linear-gradient(135deg, #8B4513 0%, #D2B48C 50%, #F5DEB3 100%);
+      min-height: 100vh;
+      padding: 10px;
+      height: auto
+    }
+
+    .recipe-book {
+      max-width: 100%;
+      margin: 0 auto;
+      perspective: 1000px;
+      position: relative;
+    }
+
+    .book-container {
+      position: relative;
+      width: 100%;
+      height: 85vh;
+      max-height: none;
+      min-height: 500px;
+      transform-style: preserve-3d;
+    }
+
+    .page {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 108, 0.2) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, #FAF0E6 0%, #F5F5DC 25%, #FFF8DC 50%, #F0E68C 100%);
+      border: 2px solid #8B4513;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow:
+        inset 0 0 15px rgba(0, 0, 0, 0.1),
+        0 8px 25px rgba(0, 0, 0, 0.3);
+      transform-origin: left center;
+      transition: transform 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+      backface-visibility: hidden;
+      overflow-y: auto;
+    }
+
+    .page.flipped {
+      transform: rotateY(-180deg);
+      z-index: 1;
+    }
+
+    .page.current-page {
+      z-index: 20;
+    }
+
+    /* Ocultá toda page que NO sea la actual ni esté dada vuelta */
+    .page:not(.current-page):not(.flipped) {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .page-content {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Introduction Page Styles */
+    .intro-page {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .intro-title {
+      font-size: 2.5rem;
+      color: #8B4513;
+      margin-bottom: 15px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .intro-subtitle {
+      font-size: 1.2rem;
+      color: #A0522D;
+      font-style: italic;
+      margin-bottom: 30px;
+    }
+
+    .intro-description {
+      font-size: 1rem;
+      color: #654321;
+      line-height: 1.6;
+      max-width: 300px;
+      margin-bottom: 30px;
+    }
+
+    .intro-decoration {
+      font-size: 2rem;
+      color: #8B4513;
+      margin: 20px 0;
+    }
+
+    /* Recipe Page Styles */
+    .recipe-header {
+      text-align: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #8B4513;
+      padding-bottom: 15px;
+    }
+
+    .recipe-title {
+      font-size: 1.8rem;
+      color: #8B4513;
+      margin-bottom: 8px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      font-weight: 700;
+    }
+
+    .recipe-subtitle {
+      font-size: 0.9rem;
+      color: #A0522D;
+      font-style: italic;
+    }
+
+    .recipe-image {
+      width: 100%;
+      height: 50vh;
+      max-height: 400px;
+      min-height: 200px;
+      aspect-ratio: 4/3;
+      background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+      border: 2px dashed #8B4513;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #8B4513;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9rem;
+      object-fit: cover;
+    }
+
+    .recipe-section {
+      margin-bottom: 20px;
+      flex: 1;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      color: #8B4513;
+      margin-bottom: 12px;
+      border-left: 3px solid #8B4513;
+      padding-left: 12px;
+      font-weight: 700;
+    }
+
+    .ingredients-list {
+      list-style: none;
+      padding-left: 15px;
+    }
+
+    .ingredients-list li {
+      margin-bottom: 6px;
+      position: relative;
+      color: #654321;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .ingredients-list li:before {
+      content: "✦";
+      position: absolute;
+      left: -15px;
+      color: #8B4513;
+    }
+
+    .preparation-steps {
+      color: #654321;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .preparation-steps p {
+      margin-bottom: 8px;
+    }
+
+    .navigation {
+      position: fixed;
+      bottom: 20px;
+      z-index: 100;
+    }
+
+    .nav-button {
+      background: rgba(139, 69, 19, 0.9);
+      border: none;
+      color: white;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      touch-action: manipulation;
+    }
+
+    .nav-button:hover:not(:disabled) {
+      background: rgba(139, 69, 19, 1);
+      transform: scale(1.05);
+    }
+
+    .nav-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: scale(1);
+    }
+
+    .nav-left {
+      left: 20px;
+    }
+
+    .nav-right {
+      right: 20px;
+    }
+
+    .page-indicator {
+      text-align: center;
+      margin-top: 15px;
+      color: #8B4513;
+      font-style: italic;
+      font-size: 0.9rem;
+    }
+
+    .recipe-image video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      /* o 'contain' si no querés recorte */
+      display: block;
+    }
+
+
+    .book-spine {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, #8B4513, #A0522D);
+      border-radius: 2px 0 0 2px;
+      box-shadow: inset -1px 0 3px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Tablet styles */
+    @media (min-width: 768px) {
+      body {
+        padding: 15px;
+      }
+
+      .book-container {
+        height: 95vh;
+        min-height: 0;
+      }
+
+      .page {
+        padding: 30px;
+      }
+
+      .recipe-title {
+        font-size: 2rem;
+      }
+
+      .intro-title {
+        font-size: 3rem;
+      }
+
+      .recipe-image {
+        height: 45vh;
+        max-height: 450px;
+      }
+
+      .navigation {
+        background: transparent;
+        backdrop-filter: blur(4px) saturate(110%);
+        -webkit-backdrop-filter: blur(4px) saturate(110%);
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        bottom: auto;
+      }
+
+      /* Botones izquierda/derecha */
+      .nav-btn,
+      .nav-left,
+      .nav-right {
+        background: rgba(0, 0, 0, .06);
+        /* casi transparente */
+        color: rgba(255, 255, 255, .85);
+        /* ícono/chevron legible */
+        border: 1px solid rgba(255, 255, 255, 0.171);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, .12);
+        opacity: .55;
+        /* más transparencia aún */
+        transition: opacity .2s ease, transform .2s ease, background-color .2s ease;
+      }
+
+      /* Hover/Focus para usabilidad */
+      .nav-btn:hover,
+      .nav-left:hover,
+      .nav-right:hover,
+      .nav-btn:focus-visible,
+      .nav-left:focus-visible,
+      .nav-right:focus-visible {
+        opacity: .95;
+        background: rgba(0, 0, 0, .18);
+        outline: 2px solid rgba(255, 255, 255, .35);
+        outline-offset: 2px;
+      }
+
+      /* Active */
+      .nav-btn:active,
+      .nav-left:active,
+      .nav-right:active {
+        transform: scale(.98);
+      }
+
+      /* Si tenés un “bar” inferior */
+      .navbar-translucent {
+        background: rgba(255, 255, 255, .04);
+        border-top: 1px solid rgba(255, 255, 255, .18);
+        backdrop-filter: blur(6px);
+      }
+
+      .tw {
+        display: inline-block;
+        white-space: pre-wrap;
+        /* respeta saltos y espacios */
+        border-right: .08em solid currentColor;
+        /* cursor */
+        padding-right: .08em;
+      }
+
+      .tw.done {
+        border-right-color: transparent;
+      }
+
+      /* Accesibilidad: si el usuario prefiere menos animaciones, mostrar texto completo */
+      @media (prefers-reduced-motion: reduce) {
+        .tw {
+          border-right-color: transparent;
+        }
+      }
+
+      /* Accesibilidad: permitir desactivar transparencia del usuario */
+      @media (prefers-reduced-transparency: reduce) {
+
+        .navigation,
+        .navbar-translucent,
+        .nav-btn,
+        .nav-left,
+        .nav-right {
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+          opacity: .9;
+        }
+      }
+
+      .nav-left {
+        left: -70px;
+      }
+
+      .nav-right {
+        right: -70px;
+      }
+
+      .nav-button {
+        width: 55px;
+        height: 55px;
+        font-size: 1.5rem;
+      }
+
+
+    }
+
+    /* Desktop styles */
+    @media (min-width: 1024px) {
+      .recipe-book {
+        max-width: 800px;
+      }
+
+      .book-container {
+        height: 95vh;
+      }
+
+      .page {
+        padding: 40px;
+      }
+
+      .recipe-image {
+        height: 50vh;
+        max-height: 500px;
+      }
+
+      .nav-left {
+        left: -80px;
+      }
+
+      .nav-right {
+        right: -80px;
+      }
+
+      .nav-button {
+        width: 60px;
+        height: 60px;
+        font-size: 1.6rem;
+      }
+    }
+
+    /* Extra small phones */
+    @media (max-width: 320px) {
+      .intro-title {
+        font-size: 2rem;
+      }
+
+      .recipe-title {
+        font-size: 1.5rem;
+      }
+
+      .page {
+        padding: 15px;
+      }
+
+      .recipe-image {
+        height: 45vh;
+        min-height: 180px;
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="recipe-book">
+      <div class="book-container">
+        <div class="book-spine"></div>
+        <div class="current-page page">
+          <div class="page-content">
+            <div class="recipe-header">
+              <h1 class="recipe-title" style="text-align: left;">Camila,</h1>
+            </div>
+            <span>
+              Hola hermosa como andas? <br>Quería decirte que me encantaría seguir conociéndote, y que me
+              encantaría que
+              seas mi novia. Sos una persona increíble, y me siento muy afortunado de haberte encontrado. Me haces
+              muy
+              feliz, y quiero seguir compartiendo momentos juntos. ¿Te gustaría ser mi novia?
+              Tambien quiero decirte que me encanta tu sonrisa, tu risa, tu forma de ser, tu inteligencia, tu
+              belleza,
+              tu sensualidad,
+              tu forma de ver la vida, tu forma de amar, tu forma de vivir. Me encanta todo de vos, y quiero seguir
+              descubriéndote cada día más. Sos la persona más linda que conocí en mi vida, y quiero que sepas que te
+              amo con todo mi corazón. ¿Te gustaría ser mi novia?
+              Y por ultimo, quiero decirte que me encantaría pasar el resto de mi vida con vos. Quiero despertarme
+              cada día a tu lado, quiero compartir mis sueños, mis miedos, mis alegrías, mis tristezas, mis éxitos,
+              mis fracasos,
+              mis locuras, mis aventuras, mis viajes, mis momentos de silencio, mis momentos de risa, mis momentos
+              de
+              llanto, mis momentos de amor. Quiero ser tu compañero de vida, tu amigo, tu amante, tu confidente, tu
+              todo. ¿Te gustaría ser mi novia?
+              Te amo con todo mi corazón, y quiero que sepas que sos la persona más linda que conocí en mi vida. ¿Te
+              gustaría ser mi novia?
+              Espero que sí, y que podamos seguir construyendo juntos una historia de amor hermosa, llena de
+              felicidad, de respeto, de confianza, de pasión, de ternura, de complicidad, de amistad, de locura, de
+              aventuras, de viajes, de momentos inolvidables. Te amo con todo mi corazón.
+              ¿Te gustaría ser mi novia?
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, onMounted, onBeforeUnmount } = Vue;
+
+    createApp({
+      setup() {
+        let obs;
+
+        const prepare = (el) => {
+          const raw = el.textContent;
+          el.dataset.full = raw.replace(/\\n/g, '\n'); // convierte "\n" → salto real
+          el.textContent = '';
+        };
+
+        const typeWriter = (el) => {
+          const text = el.dataset.full ?? ''
+          const speed = +el.dataset.speed || 25
+          let i = 0
+            ; (function tick() {
+              el.textContent = text.slice(0, i++)
+              if (i <= text.length) setTimeout(tick, speed)
+              else el.classList.add('done')
+            })()
+        }
+
+        onMounted(() => {
+          const els = [...document.querySelectorAll('.tw')];
+          if (!els.length) return;
+
+          els.forEach(prepare);
+
+          // root = contenedor que scrollea (tu .page), o viewport si no existe
+          const root = document.querySelector('.page') || null;
+
+          obs = new IntersectionObserver((entries) => {
+            entries.forEach(({ isIntersecting, intersectionRatio, target }) => {
+              if (!isIntersecting || target.dataset.started) return;
+              if (intersectionRatio < 0.6) return;     // esperá ~60% visible
+              target.dataset.started = '1';
+              typeWriter(target);
+              obs.unobserve(target);
+            });
+          }, { root, threshold: [0, 0.6, 1] });
+
+          els.forEach(el => obs.observe(el));
+        });
+
+        onBeforeUnmount(() => obs?.disconnect());
+      }
+    }).mount('#app');
+  </script>
+</body>
+
+</html>
